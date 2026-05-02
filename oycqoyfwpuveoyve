@@ -1,2 +1,2 @@
 loadstring(game:HttpGet("https://raw.githubusercontent.com/yunjun3737-ship-it/ftap-np/main/AIPA2.lua-1-1.txt"))()
-print("이스크립트는 알파카 제작이며 800로벅스에 판매되고 있는 유료스크립트 입니다.")
+print("이메세지가 보인다면 스크립트가 로딩실패 하였거나 스크립트가 잠긴것입니다.")
