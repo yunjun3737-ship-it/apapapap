@@ -41,14 +41,13 @@ local humanoid = character:WaitForChild("Humanoid")
 
 local infiniteJumpEnabled = true
 
--- 점프 요청 감지
 UserInputService.JumpRequest:Connect(function()
     if infiniteJumpEnabled and humanoid then
         humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end)
 
--- 캐릭터 리스폰 대응
+
 player.CharacterAdded:Connect(function(char)
     character = char
     humanoid = character:WaitForChild("Humanoid")
@@ -74,15 +73,14 @@ local function optimizedAntiLoopKill()
     end
 end
 
--- 주기적인 루프 연결
+
 local antiLoopKillConnection = RunService.Heartbeat:Connect(optimizedAntiLoopKill)
 
 
--- 렌더링 주기에 맞춰 루프 실행
+
 local connection
 connection = RunService.RenderStepped:Connect(antiLoopKill)
 
--- 필요 시 루프 해제용 함수
 local function stopAntiLoopKill()
     if connection then
         connection:Disconnect()
@@ -100,3 +98,124 @@ local function disableGrabDetection()
 end
 
 RunService.Heartbeat:Connect(disableGrabDetection)
+-- =================================================================
+-- 견고한 무적 및 루프킬 방어 시스템 (Anti-LoopKill & Inf Health)
+-- =================================================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local function initializeRobustDefense()
+    local function applyDefense(char)
+        local hum = char:WaitForChild("Humanoid", 10)
+        local rootPart = char:WaitForChild("HumanoidRootPart", 10)
+
+        if hum then
+            pcall(function()
+                hum.MaxHealth = math.huge
+                hum.Health = math.huge
+            end)
+
+            local healthChangedConnection
+            healthChangedConnection = hum:GetPropertyChangedSignal("Health"):Connect(function()
+                if hum.Health < math.huge then
+                    pcall(function()
+                        hum.Health = math.huge
+                    end)
+                end
+            end)
+
+            hum.Died:Connect(function()
+                if healthChangedConnection then
+                    healthChangedConnection:Disconnect()
+                end
+                task.wait(2.5)
+                if LocalPlayer.Character then
+                    applyDefense(LocalPlayer.Character)
+                end
+            end)
+        end
+
+        RunService.Heartbeat:Connect(function()
+            if char and rootPart and hum and hum.Health > 0 then
+                local currentVelocity = rootPart.Velocity
+                if math.abs(currentVelocity.Y) > 250 then
+                    rootPart.Velocity = Vector3.new(currentVelocity.X, -30, currentVelocity.Z)
+                end
+
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") and (part.Name == "GrabPart" or part.Name == "Blobman") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+
+    if LocalPlayer.Character then
+        applyDefense(LocalPlayer.Character)
+    end
+    LocalPlayer.CharacterAdded:Connect(applyDefense)
+end
+
+initializeRobustDefense()
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local function initializeRobustDefense()
+    local function applyDefense(char)
+        local hum = char:WaitForChild("Humanoid", 10)
+        local rootPart = char:WaitForChild("HumanoidRootPart", 10)
+
+        if hum then
+            pcall(function()
+                hum.MaxHealth = math.huge
+                hum.Health = math.huge
+            end)
+
+            local healthChangedConnection
+            healthChangedConnection = hum:GetPropertyChangedSignal("Health"):Connect(function()
+                local currentHealth = hum.Health
+                if currentHealth <= 0 or currentHealth < math.huge then
+                    pcall(function()
+                        hum.Health = math.huge
+                    end)
+                end
+            end)
+
+            hum.Died:Connect(function()
+                if healthChangedConnection then
+                    healthChangedConnection:Disconnect()
+                end
+                task.wait(2.5)
+                if LocalPlayer.Character then
+                    applyDefense(LocalPlayer.Character)
+                end
+            end)
+        end
+
+        RunService.Heartbeat:Connect(function()
+            if char and rootPart and hum and hum.Health > 0 then
+                local currentVelocity = rootPart.Velocity
+                if math.abs(currentVelocity.Y) > 250 then
+                    rootPart.Velocity = Vector3.new(currentVelocity.X, -30, currentVelocity.Z)
+                end
+
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") and (part.Name == "GrabPart" or part.Name == "Blobman") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+
+    if LocalPlayer.Character then
+        applyDefense(LocalPlayer.Character)
+    end
+    LocalPlayer.CharacterAdded:Connect(applyDefense)
+end
+
+initializeRobustDefense()
+
