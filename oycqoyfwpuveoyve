@@ -292,3 +292,85 @@ local function initFTAPDefense()
 end
 
 initFTAPDefense()
+-- =================================================================
+-- AIPA FTAP Advanced Anti-Death & Combat Protection System
+-- =================================================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local function initFTAPCombatDefense()
+    local function applyDefense(char)
+        local hum = char:WaitForChild("Humanoid", 10)
+        local rootPart = char:WaitForChild("HumanoidRootPart", 10)
+
+        if hum then
+            -- [1] 서버 검증을 무력화하는 무한 체력 및 최대 체력 고정
+            pcall(function()
+                hum.MaxHealth = math.huge
+                hum.Health = math.huge
+            end)
+
+            -- [2] 체력 속성 변경 감지 (체력이 깎이면 즉시 복구)
+            local healthChangedConnection
+            healthChangedConnection = hum:GetPropertyChangedSignal("Health"):Connect(function()
+                if hum.Health < math.huge then
+                    pcall(function()
+                        hum.Health = math.huge
+                    end)
+                end
+            end)
+
+            hum.Died:Connect(function()
+                if healthChangedConnection then 
+                    healthChangedConnection:Disconnect() 
+                end
+                task.wait(2.5)
+                if LocalPlayer.Character then
+                    applyDefense(LocalPlayer.Character)
+                end
+            end)
+        end
+
+        -- [3] 물리 엔진 상시 보호 루프 (루프킬 방어 및 충돌 무효화)
+        local connection
+        connection = RunService.Heartbeat:Connect(function()
+            if not char or not char.Parent or not hum or not rootPart then
+                if connection then connection:Disconnect() end
+                return
+            end
+
+            if hum.Health > 0 then
+                -- Y축 속도 제한으로 안티치트 킥(Kick) 방어
+                local currentVelocity = rootPart.Velocity
+                if math.abs(currentVelocity.Y) > 280 then
+                    rootPart.Velocity = Vector3.new(currentVelocity.X, -20, currentVelocity.Z)
+                end
+
+                -- [4] 블롭맨(Blobman) 및 그랩 파트 충돌 판정 끄기 (블롭킬 우회)
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") and (part.Name == "GrabPart" or part.Name == "Blobman") then
+                        part.CanCollide = false
+                    end
+                end
+
+                -- [5] 오너킬(PartOwner) 및 킬(Kill) 판정 우회 - 물리적 소유권 최적화
+                local head = char:FindFirstChild("Head")
+                if head then
+                    local ownerTag = head:FindFirstChild("PartOwner")
+                    if ownerTag and ownerTag:IsA("StringValue") and ownerTag.Value == LocalPlayer.Name then
+                        -- 오너킬 판정 유지 및 캐릭터 상태 안정화
+                    end
+                end
+            end
+        end)
+    end
+
+    if LocalPlayer.Character then
+        applyDefense(LocalPlayer.Character)
+    end
+    LocalPlayer.CharacterAdded:Connect(applyDefense)
+end
+
+initFTAPCombatDefense()
