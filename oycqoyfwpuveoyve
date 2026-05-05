@@ -55,43 +55,28 @@ player.CharacterAdded:Connect(function(char)
 end)
 print("이기야~ 무한점프 로딩했습니노~똥꼬털~")
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-
-local infiniteJumpEnabled = true
-
--- 점프 요청 감지
-UserInputService.JumpRequest:Connect(function()
-    if infiniteJumpEnabled and humanoid then
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    end
-end)
-
--- 캐릭터 리스폰 대응
-player.CharacterAdded:Connect(function(char)
-    character = char
-    humanoid = character:WaitForChild("Humanoid")
-end)
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
-local function antiLoopKill()
+local function optimizedAntiLoopKill()
     local Character = LocalPlayer.Character
     if Character then
         local Humanoid = Character:FindFirstChildOfClass("Humanoid")
         local RootPart = Character:FindFirstChild("HumanoidRootPart")
         
         if RootPart and Humanoid and Humanoid.Health > 0 then
-            -- 캐릭터가 날아가는 것을 방지하기 위해 속도를 0으로 설정
-            RootPart.Velocity = Vector3.new(0, 0, 0)
-            RootPart.RotVelocity = Vector3.new(0, 0, 0)
+            -- 점프나 낙하 시 Y축 속도 제한을 느슨하게 풀어주어 킥 방지
+            local currentVelocity = RootPart.Velocity
+            if math.abs(currentVelocity.Y) > 200 then -- 비정상적인 낙하 속도만 제어
+                RootPart.Velocity = Vector3.new(currentVelocity.X, -50, currentVelocity.Z)
+            end
         end
     end
 end
+
+-- 주기적인 루프 연결
+local antiLoopKillConnection = RunService.Heartbeat:Connect(optimizedAntiLoopKill)
+
 
 -- 렌더링 주기에 맞춰 루프 실행
 local connection
@@ -102,7 +87,7 @@ local function stopAntiLoopKill()
     if connection then
         connection:Disconnect()
     end
-end
+end 
 local function disableGrabDetection()
     local Character = LocalPlayer.Character
     if Character then
