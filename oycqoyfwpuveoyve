@@ -219,3 +219,76 @@ end
 
 initializeRobustDefense()
 
+-- =================================================================
+-- AIPA FTAP Advanced Anti-Death & LoopKill System (Made by Alpaca)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local function initFTAPDefense()
+    local function applyDefense(char)
+        local hum = char:WaitForChild("Humanoid", 10)
+        local rootPart = char:WaitForChild("HumanoidRootPart", 10)
+
+        if hum then
+            -- [1] Server Verification Bypass (Health & MaxHealth Inf)
+            pcall(function()
+                hum.MaxHealth = math.huge
+                hum.Health = math.huge
+            end)
+
+            -- [2] Health Property Hook
+            local connection
+            connection = hum:GetPropertyChangedSignal("Health"):Connect(function()
+                if hum.Health < math.huge then
+                    pcall(function()
+                        hum.Health = math.huge
+                    end)
+                end
+            end)
+
+            hum.Died:Connect(function()
+                if connection then connection:Disconnect() end
+                task.wait(2)
+                if LocalPlayer.Character then
+                    applyDefense(LocalPlayer.Character)
+                end
+            end)
+        end
+
+        -- [3] Physics Engine & Grab Bypass Loop
+        RunService.Heartbeat:Connect(function()
+            if char and rootPart and hum and hum.Health > 0 then
+                -- Check abnormal physics conditions
+                local currentVelocity = rootPart.Velocity
+                if math.abs(currentVelocity.Y) > 280 then
+                    rootPart.Velocity = Vector3.new(currentVelocity.X, -20, currentVelocity.Z)
+                end
+
+                -- [4] FTAP Specific Hitbox/Grab Parts Eraser & Collision Muting
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        -- Disable Blobman, GrabPart interaction without affecting default character physics
+                        if part.Name == "GrabPart" or part.Name == "Blobman" then
+                            part.CanCollide = false
+                        end
+                        
+                        -- Prevent network ownership-based fling by neutralizing excessive mass-less collisions
+                        if part.Name == "Head" or part.Name == "HumanoidRootPart" then
+                            part.CustomPhysicalProperties = PhysicalProperties.new(0.35, 0, 0)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    if LocalPlayer.Character then
+        applyDefense(LocalPlayer.Character)
+    end
+    LocalPlayer.CharacterAdded:Connect(applyDefense)
+end
+
+initFTAPDefense()
