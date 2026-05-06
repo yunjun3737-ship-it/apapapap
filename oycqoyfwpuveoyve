@@ -460,7 +460,7 @@ local rs = ReplicatedStorage
 
 local enabled = true
 
--- 안전한 Remote 가져오기
+-- 안전한 Remote
 local GrabEvents = rs:WaitForChild("GrabEvents", 5)
 local SetNetworkOwner = GrabEvents and GrabEvents:WaitForChild("SetNetworkOwner", 3)
 
@@ -484,7 +484,7 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- 2. Blobman 강제 Release (더 안전하게)
+    -- 2. Blobman 강제 Release
     for _, blob in ipairs(workspace:GetDescendants()) do
         if blob.Name == "CreatureBlobman" then
             local scriptObj = blob:FindFirstChild("BlobmanSeatAndOwnerScript")
@@ -518,10 +518,10 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- 4. 과도한 날림 방지
+    -- 4. 과도한 날림 방지 (수정됨 - 정상 움직임 거의 안 건드림)
     local vel = root.Velocity
-    if math.abs(vel.Y) > 250 then
-        root.Velocity = Vector3.new(vel.X, -30, vel.Z)
+    if math.abs(vel.Y) > 380 then        -- 380 이상일 때만 작동 (일반 점프/이동은 거의 안 걸림)
+        root.Velocity = Vector3.new(vel.X, -25, vel.Z)
     end
 end)
 
@@ -535,4 +535,4 @@ plr.CharacterAdded:Connect(function(char)
     end
 end)
 
-print("Strong Passive Anti Loaded - Safe Version")
+print("Strong Passive Anti Loaded - Movement Friendly Version")
