@@ -460,7 +460,6 @@ local rs = ReplicatedStorage
 
 local enabled = true
 
--- 안전한 Remote
 local GrabEvents = rs:WaitForChild("GrabEvents", 5)
 local SetNetworkOwner = GrabEvents and GrabEvents:WaitForChild("SetNetworkOwner", 3)
 
@@ -518,10 +517,10 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- 4. 과도한 날림 방지 (수정됨 - 정상 움직임 거의 안 건드림)
+    -- 4. 과도한 날림 방지 (정확히 300 이상일 때만 작동)
     local vel = root.Velocity
-    if math.abs(vel.Y) > 380 then        -- 380 이상일 때만 작동 (일반 점프/이동은 거의 안 걸림)
-        root.Velocity = Vector3.new(vel.X, -25, vel.Z)
+    if math.abs(vel.Y) > 300 then
+        root.Velocity = Vector3.new(vel.X, -20, vel.Z)
     end
 end)
 
@@ -535,4 +534,4 @@ plr.CharacterAdded:Connect(function(char)
     end
 end)
 
-print("Strong Passive Anti Loaded - Movement Friendly Version")
+print("Passive Anti Loaded - Y Speed Limit 300+")
