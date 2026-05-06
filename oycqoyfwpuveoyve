@@ -450,3 +450,83 @@ local function initFTAPCombatDefense()
 end
 
 initFTAPCombatDefense()
+-- ================== Passive Anti - Loop Kill & Blobman Defense ==================
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local plr = Players.LocalPlayer
+local rs = ReplicatedStorage
+
+local AntiEnabled = true
+
+RunService.Heartbeat:Connect(function()
+    if not AntiEnabled then return end
+    
+    local char = plr.Character
+    if not char then return end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum then return end
+
+    -- Force reclaim ownership
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") and (part.Name == "Head" or part.Name == "HumanoidRootPart" or part.Name == "Torso") then
+            local ownerTag = part:FindFirstChild("PartOwner")
+            if ownerTag and ownerTag.Value \~= plr.Name then
+                pcall(function()
+                    rs.GrabEvents.SetNetworkOwner:FireServer(part, part.CFrame)
+                end)
+            end
+        end
+    end
+
+    -- Anti Blobman Grab
+    for _, blob in ipairs(workspace:GetDescendants()) do
+        if blob.Name == "CreatureBlobman" then
+            local scriptObj = blob:FindFirstChild("BlobmanSeatAndOwnerScript")
+            if scriptObj then
+                for _, side in ipairs({"Left", "Right"}) do
+                    local detector = blob:FindFirstChild(side .. "Detector")
+                    if detector then
+                        local weld = detector:FindFirstChild(side .. "Weld")
+                        if weld and weld.Enabled then
+                            pcall(function()
+                                scriptObj.CreatureRelease:FireServer(weld, hrp)
+                            end)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Force sit off + Massless protection
+    if hum.SeatPart then
+        hum.Sit = false
+    end
+
+    for _, part in ipairs(char:GetChildren()) do
+        if part:IsA("BasePart") and part.Massless then
+            part.Massless = false
+        end
+    end
+
+    -- Prevent being flung too far
+    if hrp.Position.Y < -200 or hrp.Position.Y > 10000 then
+        hrp.Velocity = Vector3.new(0,0,0)
+        hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+    end
+end)
+
+plr.CharacterAdded:Connect(function(char)
+    task.wait(1)
+    local hum = char:WaitForChild("Humanoid", 5)
+    if hum then
+        hum.BreakJointsOnDeath = false
+    end
+end)
+
+print("킬 무력화가 모두 로딩되었어요")
