@@ -374,3 +374,79 @@ local function initFTAPCombatDefense()
 end
 
 initFTAPCombatDefense()
+-- =================================================================
+-- AIPA FTAP Advanced Combat Protection & Velocity Teleport System
+-- =================================================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local function initFTAPCombatDefense()
+    local function applyDefense(char)
+        local hum = char:WaitForChild("Humanoid", 10)
+        local rootPart = char:WaitForChild("HumanoidRootPart", 10)
+
+        if hum then
+            -- [1] 서버 검증 우회 무한 체력 적용
+            pcall(function()
+                hum.MaxHealth = math.huge
+                hum.Health = math.huge
+            end)
+
+            local healthChangedConnection
+            healthChangedConnection = hum:GetPropertyChangedSignal("Health"):Connect(function()
+                if hum.Health < math.huge then
+                    pcall(function()
+                        hum.Health = math.huge
+                    end)
+                end
+            end)
+
+            hum.Died:Connect(function()
+                if healthChangedConnection then 
+                    healthChangedConnection:Disconnect() 
+                end
+                task.wait(2.5)
+                if LocalPlayer.Character then
+                    applyDefense(LocalPlayer.Character)
+                end
+            end)
+        end
+
+        -- [2] 루프킬 방어 및 수직축 텔레포트 보호 루프
+        local connection
+        connection = RunService.Heartbeat:Connect(function()
+            if not char or not char.Parent or not hum or not rootPart then
+                if connection then connection:Disconnect() end
+                return
+            end
+
+            if hum.Health > 0 then
+                local currentVelocity = rootPart.Velocity
+
+                -- 수직축(Y축) 속도가 300 이상일 경우 (0, 0, 0)으로 텔레포트
+                if math.abs(currentVelocity.Y) >= 300 then
+                    rootPart.CFrame = CFrame.new(0, 0, 0)
+                    rootPart.Velocity = Vector3.new(0, 0, 0)
+                elseif math.abs(currentVelocity.Y) > 250 then
+                    rootPart.Velocity = Vector3.new(currentVelocity.X, -20, currentVelocity.Z)
+                end
+
+                -- 블롭맨(Blobman) 및 그랩 파트 충돌 무효화
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") and (part.Name == "GrabPart" or part.Name == "Blobman") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+
+    if LocalPlayer.Character then
+        applyDefense(LocalPlayer.Character)
+    end
+    LocalPlayer.CharacterAdded:Connect(applyDefense)
+end
+
+initFTAPCombatDefense()
