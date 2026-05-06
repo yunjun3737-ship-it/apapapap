@@ -450,40 +450,41 @@ local function initFTAPCombatDefense()
 end
 
 initFTAPCombatDefense()
--- ================== Passive Anti - Loop Kill & Blobman Defense ==================
-
+-- ================== Strong Passive Anti - LoopKill & Blobman Defense ==================
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local plr = Players.LocalPlayer
 local rs = ReplicatedStorage
 
-local AntiEnabled = true
+local enabled = true
+
+-- 안전한 Remote 가져오기
+local GrabEvents = rs:WaitForChild("GrabEvents", 5)
+local SetNetworkOwner = GrabEvents and GrabEvents:WaitForChild("SetNetworkOwner", 3)
 
 RunService.Heartbeat:Connect(function()
-    if not AntiEnabled then return end
+    if not enabled then return end
+    if not SetNetworkOwner then return end
     
     local char = plr.Character
     if not char then return end
     
-    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local root = char:FindFirstChild("HumanoidRootPart")
     local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hrp or not hum then return end
+    if not root or not hum then return end
 
-    -- Force reclaim ownership
+    -- 1. Owner 강제 유지
     for _, part in ipairs(char:GetDescendants()) do
-        if part:IsA("BasePart") and (part.Name == "Head" or part.Name == "HumanoidRootPart" or part.Name == "Torso") then
-            local ownerTag = part:FindFirstChild("PartOwner")
-            if ownerTag and ownerTag.Value \~= plr.Name then
-                pcall(function()
-                    rs.GrabEvents.SetNetworkOwner:FireServer(part, part.CFrame)
-                end)
-            end
+        if part:IsA("BasePart") and (part.Name == "Head" or part.Name == "HumanoidRootPart") then
+            pcall(function()
+                SetNetworkOwner:FireServer(part, part.CFrame)
+            end)
         end
     end
 
-    -- Anti Blobman Grab
+    -- 2. Blobman 강제 Release (더 안전하게)
     for _, blob in ipairs(workspace:GetDescendants()) do
         if blob.Name == "CreatureBlobman" then
             local scriptObj = blob:FindFirstChild("BlobmanSeatAndOwnerScript")
@@ -494,7 +495,10 @@ RunService.Heartbeat:Connect(function()
                         local weld = detector:FindFirstChild(side .. "Weld")
                         if weld and weld.Enabled then
                             pcall(function()
-                                scriptObj.CreatureRelease:FireServer(weld, hrp)
+                                local release = scriptObj:FindFirstChild("CreatureRelease")
+                                if release then
+                                    release:FireServer(weld, root)
+                                end
                             end)
                         end
                     end
@@ -503,7 +507,7 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- Force sit off + Massless protection
+    -- 3. 앉기 & Massless 방어
     if hum.SeatPart then
         hum.Sit = false
     end
@@ -514,19 +518,21 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- Prevent being flung too far
-    if hrp.Position.Y < -200 or hrp.Position.Y > 10000 then
-        hrp.Velocity = Vector3.new(0,0,0)
-        hrp.AssemblyLinearVelocity = Vector3.new(0,0,0)
+    -- 4. 과도한 날림 방지
+    local vel = root.Velocity
+    if math.abs(vel.Y) > 250 then
+        root.Velocity = Vector3.new(vel.X, -30, vel.Z)
     end
 end)
 
 plr.CharacterAdded:Connect(function(char)
-    task.wait(1)
+    task.wait(0.8)
     local hum = char:WaitForChild("Humanoid", 5)
     if hum then
         hum.BreakJointsOnDeath = false
+        hum.MaxHealth = math.huge
+        hum.Health = math.huge
     end
 end)
 
-print("킬 무력화가 모두 로딩되었어요")
+print("Strong Passive Anti Loaded - Safe Version")
